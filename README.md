@@ -31,26 +31,27 @@ System Requirements
 
 1️⃣ Install Ollama (directly on Jetson host)
 
-curl -fsSL https://ollama.com/install.sh | sh
+curl -fsSL https://ollama.com/install.sh | sh  
 ollama version
-# Confirm version is 0.9.0+
+
+**Confirm version is 0.9.0+**
 
 2️⃣ Pull LLM models on host
 
-ollama pull llama3
-ollama pull llama4
-ollama pull phi3
-ollama pull mistral
+ollama pull llama3  
+ollama pull llama4  
+ollama pull phi3  
+ollama pull mistral  
 ollama pull codellama
 
 3️⃣ Clone and build Jetson Copilot
 
-git clone https://github.com/YOUR_REPO/jetson-copilot-clean.git
+git clone https://github.com/YOUR_REPO/jetson-copilot-clean.git  
 cd jetson-copilot-clean
 
 chmod +x build_copilot.sh run_copilot.sh
 
-./build_copilot.sh
+./build_copilot.sh  
 ./run_copilot.sh
 
 ---
@@ -82,16 +83,16 @@ RAG Mode (Document-Aware)
 
 🗂 Folder Structure
 
-jetson-copilot-clean/
-├── Dockerfile
-├── build_copilot.sh
-├── run_copilot.sh
-├── streamlit_app/
-│   ├── app.py
-│   ├── utils/
-│   │   ├── constants.py
-│   │   └── func.py
-│   ├── images/
+jetson-copilot-clean/  
+├── Dockerfile  
+├── build_copilot.sh  
+├── run_copilot.sh  
+├── streamlit_app/  
+│   ├── app.py  
+│   ├── utils/  
+│   │   ├── constants.py  
+│   │   └── func.py  
+│   ├── images/  
 └── indexes/ (optional persistent indexes)
 
 ---
@@ -100,7 +101,7 @@ jetson-copilot-clean/
 
 Docker Permission
 
-sudo usermod -aG docker $USER
+sudo usermod -aG docker $USER  
 newgrp docker
 
 Ollama Model Not Found
@@ -116,4 +117,4 @@ Ensure models are pulled directly via ollama pull on the host.
 
 ---
 
-🚀 Fully private, on-device, cloud-free AI Copilot for Jetson — PRODUCTION READY.
+🚀 Fully private, on-device, cloud-free AI Copilot for Jetson.
