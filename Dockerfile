@@ -29,7 +29,9 @@ RUN pip install \
     pymupdf \
     pdf2image \
     pytesseract \
-    pillow
+    pillow \
+    docx2txt
+
 
 # Set workdir and copy app source
 WORKDIR /app

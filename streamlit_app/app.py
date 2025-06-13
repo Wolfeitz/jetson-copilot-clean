@@ -26,7 +26,6 @@ st.set_page_config(page_title="Jetson Copilot", menu_items=None)
 AVATAR_AI = Image.open('./images/jetson-soc.png')
 AVATAR_USER = Image.open('./images/user-purple.png')
 
-# Generalized system prompt
 DEFAULT_PROMPT = """You are an AI assistant. You can hold normal conversations and answer questions using any relevant documents that have been uploaded or indexed.
 
 Contextual documents available for reference:
@@ -80,14 +79,18 @@ def process_uploaded_files(files):
             reader = PyMuPDFReader()
             docs = reader.load_data(tmp_path)
 
-            # Check if any meaningful text was extracted
             if all(not doc.text.strip() for doc in docs):
                 ocr_text = ocr_pdf(tmp_path)
                 docs = [Document(text=ocr_text, metadata={"filename": file_name})]
 
         elif file_name.endswith(".docx"):
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
+                tmp.write(file_content)
+                tmp_path = tmp.name
+
             reader = DocxReader()
-            docs = reader.load_data(file=io.BytesIO(file_content))
+            docs = reader.load_data(tmp_path)
+
         elif file_name.endswith(".md"):
             reader = MarkdownReader()
             docs = reader.load_data(file=io.BytesIO(file_content))
@@ -113,7 +116,7 @@ if 'mxbai-embed-large:latest' not in models:
 
 # Sidebar UI
 with st.sidebar:
-    st.title(":rocket: Jetson Copilot V2.1 OCR Hybrid")
+    st.title(":rocket: Jetson Copilot V2.1.2")
     st.subheader('Your local AI assistant', divider='rainbow')
 
     default_model = "llama3:latest" if "llama3:latest" in models else models[0]
@@ -132,9 +135,10 @@ with st.sidebar:
         st.success("System prompt updated!")
 
     uploaded_files = st.file_uploader("Drop files to add to context", type=["pdf", "txt", "docx", "md"], accept_multiple_files=True)
-    if uploaded_files:
+    if uploaded_files is not None:
+        # Full sync mode: uploaded_docs always reflects file_uploader
         new_docs = process_uploaded_files(uploaded_files)
-        st.session_state.uploaded_docs.extend(new_docs)
+        st.session_state.uploaded_docs = new_docs
         st.success("Uploaded documents loaded into session!")
 
     if st.session_state.use_index:
@@ -163,7 +167,8 @@ def get_current_chat_engine():
         memory=st.session_state.memory,
         llm=Settings.llm,
         context_prompt=st.session_state.context_prompt,
-        verbose=True
+        verbose=True,
+        similarity_top_k=5
     )
     return chat_engine
 
