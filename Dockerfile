@@ -14,10 +14,10 @@ RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1
 # Upgrade pip
 RUN python -m pip install --upgrade pip
 
-# Docker caching optimization
+# Use Docker layer caching correctly
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy app source AFTER pip install layer
+# Copy source code AFTER pip install to maximize Docker caching
 COPY . /app
 WORKDIR /app

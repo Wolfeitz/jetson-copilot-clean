@@ -1,5 +1,5 @@
 streamlit
-ollama==0.5.1
+ollama==0.1.27
 llama-index==0.10.20
 llama-index-llms-ollama
 llama-index-embeddings-ollama
