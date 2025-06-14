@@ -1,0 +1,14 @@
+streamlit
+ollama==0.5.1
+llama-index==0.10.20
+llama-index-llms-ollama
+llama-index-embeddings-ollama
+llama-index-readers-file
+llama-index-readers-web
+pydantic==1.10.12
+pymupdf
+pdf2image
+pytesseract
+pillow
+docx2txt
+requests

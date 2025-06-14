@@ -1,120 +1,105 @@
+# 🚀 Jetson Copilot V3.1.2
 
-Jetson Copilot Clean Build V2.0 🚀
-
-Private AI Assistant for NVIDIA Jetson — Fully Modernized, Ollama-powered, and RAG-ready
-
----
-
-✨ Overview
-
-Jetson Copilot is a local AI assistant designed for NVIDIA Jetson devices. This fully modernized build replaces NVIDIA’s reference container with:
-
-- Fully public Docker build (no NVIDIA private nvcr.io access required)
-- Python 3.10 (fully compatible with latest LlamaIndex releases)
-- Modular LlamaIndex hybrid RAG (Retrieval-Augmented Generation)
-- Ollama 0.9.0 server running directly on Jetson host (ARM64 native)
-- Simplified, reproducible, open-source friendly build process
-- Compatible with JetPack 6.0 GA (L4T 36.4.0)
+A fully local, GPU-accelerated, hybrid-RAG AI assistant for NVIDIA Jetson AGX Orin (and beyond).
 
 ---
 
-System Requirements
+## 🔥 Features
 
-- Jetson device with JetPack 6.0 GA or newer
-- NVIDIA container runtime (nvidia-docker2)
-- Docker installed
-- Ollama installed directly on Jetson host
+- Fully self-hosted AI chat engine powered by Ollama
+- Supports local model inference with streaming chat
+- Hybrid RAG mode combining indexed documents + live uploaded files
+- Model catalog intelligence powered by GPT for easy model evaluation
+- Supports PDFs, DOCX, Markdown, TXT ingestion
+- ARM64-native optimized build for Jetson Orin
 
 ---
 
-🚀 Install Instructions
+## ⚙ Architecture
 
-1️⃣ Install Ollama (directly on Jetson host)
+| Layer | Location |
+|-------|----------|
+| Ollama Server | Installed directly on Jetson host (ARM64 binary) |
+| Ollama Model Files | `~/.ollama` on host |
+| Streamlit App (Copilot) | Inside Docker container |
+| Ollama Python Client (v0.5.1) | Inside Docker |
+| LlamaIndex (v0.10.20 stack) | Inside Docker |
+| Document Storage | Mounted index directory inside Docker |
 
-curl -fsSL https://ollama.com/install.sh | sh  
-ollama version
+---
 
-**Confirm version is 0.9.0+**
+## 🚀 Build Instructions (Jetson Copilot V3.1.2 Optimized Build)
 
-2️⃣ Pull LLM models on host
+### 1️⃣ Host dependencies (Jetson or DGX)
 
-ollama pull llama3  
-ollama pull llama4  
-ollama pull phi3  
-ollama pull mistral  
-ollama pull codellama
+- Host Ollama server installed at version >= 0.1.27+
+- Ollama ARM64 binary installed directly on host
 
-3️⃣ Clone and build Jetson Copilot
+Verify Ollama version:
 
-git clone https://github.com/YOUR_REPO/jetson-copilot-clean.git  
+```bash
+ollama --version
+# Should report: v0.1.27 (or newer)
+You can safely upgrade Ollama on host by downloading the ARM64 binary from:
+https://github.com/ollama/ollama/releases
+```
+
+2️⃣ Clone repository & build docker image
+bash
+Copy
+Edit
+git clone https://github.com/YOUR_REPO/jetson-copilot-clean
 cd jetson-copilot-clean
 
-chmod +x build_copilot.sh run_copilot.sh
-
+# Build optimized Docker image
 ./build_copilot.sh  
+✅ The first build may take several minutes  
+✅ Subsequent rebuilds will be dramatically faster  
+
+3️⃣ Run Jetson Copilot container  
+```bash  
 ./run_copilot.sh
+By default, Streamlit app will be served on:
+http://localhost:8501/
+```
+The app inside Docker connects to Ollama running on the Jetson host using http://127.0.0.1:11434
 
----
+🧬 Build System Optimization
+⚡ Fully cached pip install layers (requirements.txt)  
+⚡ App code changes no longer invalidate package layers  
+⚡ Future rebuilds typically complete in ~30-60 seconds  
+📝 Model Download  
+Use the built-in model downloader inside the Streamlit app:  
+Supports automatic pulling of models from Ollama library  
+GPT-powered enrichment metadata automatically updates model catalog  
+Jetson-safety indicators assist with proper model selection
 
-🌐 Access Jetson Copilot
+🔧 File Structure
+```bash
+jetson-copilot-clean/
+│
+├── Dockerfile             # Fully optimized V3.1.2 build file
+├── requirements.txt       # Python dependencies
+├── build_copilot.sh       # Build script
+├── run_copilot.sh         # Launch script
+├── streamlit_app/
+│   ├── app.py             # Main Streamlit app
+│   ├── utils/
+│   │   ├── func.py        # Utility functions
+│   │   ├── constants.py   # App constants
+│   │   └── model_catalog_utils.py  # GPT-powered model enrichment logic
+│   └── pages/
+│       └── download_model.py   # Ollama model download interface
+└── Indexes/               # Document vector storage
+```
 
-After launch, access the UI at:
+💡 Roadmap  
+✅ V3.1.2: Optimized build system  
+🔄 V3.2.x: Optional multi-agent extensions  
+🔄 V3.3.x: Cluster orchestration & distributed Ollama support
 
-- http://localhost:8501/ (local Jetson)
-- http://<JETSON_LAN_IP>:8501/ (local network access)
-
-The run_copilot.sh script will display your IP addresses.
-
----
-
-🧠 Using Jetson Copilot
-
-Pure Chat Mode (no RAG)
-
-- Immediately chat with LLM models pulled via Ollama.
-
-RAG Mode (Document-Aware)
-
-- Enable RAG toggle in sidebar.
-- Upload files or load pre-built indexes to augment responses.
-- Supports: pdf, txt, docx, md files.
-
----
-
-🗂 Folder Structure
-
-jetson-copilot-clean/  
-├── Dockerfile  
-├── build_copilot.sh  
-├── run_copilot.sh  
-├── streamlit_app/  
-│   ├── app.py  
-│   ├── utils/  
-│   │   ├── constants.py  
-│   │   └── func.py  
-│   ├── images/  
-└── indexes/ (optional persistent indexes)
-
----
-
-🩺 Troubleshooting
-
-Docker Permission
-
-sudo usermod -aG docker $USER  
-newgrp docker
-
-Ollama Model Not Found
-
-Ensure models are pulled directly via ollama pull on the host.
-
----
-
-❤️ Credits
-
-- Original concept from NVIDIA Jetson Copilot
-- Fully modernized by Wolfeitz + AI (ChatGPT) collaboration
-
----
-
-🚀 Fully private, on-device, cloud-free AI Copilot for Jetson.
+💖 Credits
+NVIDIA Jetson AGX Orin  
+Ollama model server  
+LlamaIndex  
+Streamlit
