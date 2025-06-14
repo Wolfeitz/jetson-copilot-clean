@@ -1,7 +1,8 @@
 #!/bin/bash
 
-echo "Launching Jetson Copilot Clean Build V2.0 Docker container..."
-docker run --runtime=nvidia --network=host -p 8501:8501 jetson-copilot-clean:clean-v2 &
+echo "Launching Jetson Copilot V3.1.3 Docker container..."
+
+docker run --rm --runtime=nvidia --network=host -p 8501:8501 jetson-copilot:clean-v3.1.3 &
 # For DGX change --runtime=nvidia to --gpus all
 
 # Wait a second to allow container to spin up
