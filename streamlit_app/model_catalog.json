@@ -1,0 +1,38 @@
+{
+  "llama3.1:8b": {
+    "RAM": "28-32 GB",
+    "Reasoning": "🧠🧠🧠🧠🧠",
+    "JetsonSafe": "❌ borderline unless you have full 64GB AGX",
+    "Why": "Full model, best if you have huge RAM"
+  },
+  "llama3.1:8b-q4_0": {
+    "RAM": "~10-12 GB",
+    "Reasoning": "🧠🧠🧠🧠🧠",
+    "JetsonSafe": "✅ perfect for Jetson Orin 32GB",
+    "Why": "Best balance for Jetson AGX"
+  },
+  "llama3.1:8b-q4_K_M": {
+    "RAM": "~8-9 GB",
+    "Reasoning": "🧠🧠🧠🧠🧠",
+    "JetsonSafe": "✅ ideal if available",
+    "Why": "Ideal quantization for Jetson"
+  },
+  "llama4:maverick": {
+    "RAM": "~4 GB",
+    "Reasoning": "🧠🧠",
+    "JetsonSafe": "✅ always safe",
+    "Why": "Ultra-light Llama 4 demo model"
+  },
+  "mistral:7b": {
+    "RAM": "~8-10 GB",
+    "Reasoning": "🧠🧠🧠🧠",
+    "JetsonSafe": "✅ safe",
+    "Why": "Excellent instruction following"
+  },
+  "phi3:3.8b-q4_0": {
+    "RAM": "~5-6 GB",
+    "Reasoning": "🧠🧠🧠🧠",
+    "JetsonSafe": "✅ always safe",
+    "Why": "Insanely efficient for size"
+  }
+}

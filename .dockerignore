@@ -1,0 +1,13 @@
+Indexes/
+.ollama/
+models/
+models/*
+
+.*
+*.log
+*.tmp
+*.bak
+*.swp
+venv/
+__pycache__/
+*.pyc
