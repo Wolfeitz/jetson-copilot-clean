@@ -1,0 +1,9 @@
+streamlit==1.45.1
+ollama==0.5.1
+llama-index==0.12.18
+llama-index-llms-ollama==0.6.2
+llama-index-embeddings-ollama==0.6.0
+llama-index-readers-file==0.4.9
+llama-index-readers-web==0.4.2
+pydantic==2.11.7
+requests==2.32.4

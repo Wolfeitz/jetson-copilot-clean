@@ -1,18 +1,13 @@
-# Prevent Docker from uploading huge context
-
 Indexes/
 .ollama/
 models/
 models/*
 
-# Exclude hidden files & folders
 .*
 *.log
 *.tmp
 *.bak
 *.swp
-
-# Exclude virtual environments if any
 venv/
 __pycache__/
 *.pyc

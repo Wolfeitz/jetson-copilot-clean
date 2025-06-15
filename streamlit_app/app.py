@@ -1,214 +1,209 @@
-import ollama
 import streamlit as st
+import ollama
 import time
+import os
+import io
+import tempfile
 import logging
 import sys
-import os
-
-from llama_index.core import VectorStoreIndex, Settings, Document, StorageContext, load_index_from_storage
-from llama_index.llms.ollama import Ollama
-from llama_index.core.memory import ChatMemoryBuffer
-from llama_index.embeddings.ollama import OllamaEmbedding
-from llama_index.readers.file import PyMuPDFReader, MarkdownReader, DocxReader
-
 from PIL import Image
-import tempfile
-import io
-
-# Add parent path to import our local utils
-parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-sys.path.insert(0, parent_dir)
-
-import utils.func
-import utils.constants as const
-from utils import model_catalog_utils
+from llama_index.core import (
+    SimpleDirectoryReader,
+    VectorStoreIndex,
+    ServiceContext,
+    StorageContext,
+    load_index_from_storage,
+)
+from llama_index.core.memory import ChatMemoryBuffer
+from llama_index.core.node_parser import SentenceSplitter
+from llama_index.llms.ollama import Ollama
+from llama_index.embeddings.ollama import OllamaEmbedding
+from llama_index.readers.file import PDFReader, DocxReader, MarkdownReader
 
 # Setup logging
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
-# Streamlit page config
-st.set_page_config(page_title="Jetson Copilot", menu_items=None)
+# App configuration
+st.set_page_config(page_title="Jetson Copilot V4", page_icon="🤖")
 
 # Load avatars
 AVATAR_AI = Image.open('./images/jetson-soc.png')
 AVATAR_USER = Image.open('./images/user-purple.png')
 
-# Default system prompt (fully generalized now)
-DEFAULT_PROMPT = """
-You are a helpful assistant capable of answering any general question, and answering questions based on both indexed documents and uploaded files when available.
+# Default system prompt
+DEFAULT_PROMPT = """You are a highly capable AI assistant.
+Use any document context provided to inform your answers.
 
-Use chat history, document context, and reasoning to help the user.
-"""
+Document Context:
+{context_str}
 
-# Session state initialization
+Instructions:
+Use both the chat history and document context to assist the user."""
+
+# Ensure models are available
+def ensure_models():
+    try:
+        response = ollama.list()
+        models_raw = list(response)  # normalize tuple/list
+        models = []
+        for model_entry in models_raw:
+            if isinstance(model_entry, dict) and "name" in model_entry:
+                models.append(model_entry["name"])
+    except Exception as e:
+        st.error(f"Failed to query Ollama models: {e}")
+        models = []
+
+    if 'llama3:latest' not in models:
+        with st.spinner("Downloading llama3 model..."):
+            ollama.pull("llama3")
+            models.append("llama3:latest")
+
+    if 'mxbai-embed-large:latest' not in models:
+        with st.spinner("Downloading embedding model..."):
+            ollama.pull("mxbai-embed-large")
+            models.append("mxbai-embed-large:latest")
+
+    return sorted(models)
+
+# Initialize models
+models = ensure_models()
+
+# Initialize session state
 if "memory" not in st.session_state:
     st.session_state.memory = ChatMemoryBuffer.from_defaults(token_limit=4096)
-
 if "messages" not in st.session_state:
-    st.session_state.messages = [
-        {"role": "assistant", "content": "Ask me anything!", "avatar": AVATAR_AI}
-    ]
-
+    st.session_state.messages = [{"role": "assistant", "content": "Hello! Upload documents or start chatting.", "avatar": AVATAR_AI}]
 if "context_prompt" not in st.session_state:
     st.session_state.context_prompt = DEFAULT_PROMPT
-
-if "use_index" not in st.session_state:
-    st.session_state.use_index = False
-
 if "uploaded_docs" not in st.session_state:
     st.session_state.uploaded_docs = []
+if "rag_mode" not in st.session_state:
+    st.session_state.rag_mode = False
 
-# Utility functions
-def find_saved_indexes():
-    return utils.func.list_directories(const.INDEX_ROOT_PATH)
-
-def load_index(index_name):
-    Settings.embed_model = OllamaEmbedding("mxbai-embed-large:latest")
-    dir = f"{const.INDEX_ROOT_PATH}/{index_name}"
-    storage_context = StorageContext.from_defaults(persist_dir=dir)
-    return load_index_from_storage(storage_context)
+# File processor
+class Document:
+    def __init__(self, text):
+        self.text = text
 
 def process_uploaded_files(files):
     documents = []
     for file in files:
-        file_content = file.read()
-        file_name = file.name.lower()
-
-        if file_name.endswith(".pdf"):
+        content = file.read()
+        name = file.name.lower()
+        if name.endswith(".pdf"):
             with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-                tmp.write(file_content)
-                tmp_path = tmp.name
-            reader = PyMuPDFReader()
-            docs = reader.load_data(tmp_path)
-
-        elif file_name.endswith(".docx"):
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
-                tmp.write(file_content)
-                tmp_path = tmp.name
+                tmp.write(content)
+                reader = PDFReader()
+                docs = reader.load_data(tmp.name)
+        elif name.endswith(".docx"):
             reader = DocxReader()
-            docs = reader.load_data(tmp_path)
-
-        elif file_name.endswith(".md"):
+            docs = reader.load_data(io.BytesIO(content))
+        elif name.endswith(".md"):
             reader = MarkdownReader()
-            docs = reader.load_data(file=io.BytesIO(file_content))
-
-        elif file_name.endswith(".txt"):
-            text = file_content.decode("utf-8", errors="ignore")
-            docs = [Document(text=text, metadata={"filename": file_name})]
-
+            docs = reader.load_data(io.BytesIO(content))
+        elif name.endswith(".txt"):
+            text = content.decode("utf-8", errors="ignore")
+            docs = [Document(text=text)]
         else:
-            text = file_content.decode("utf-8", errors="ignore")
-            docs = [Document(text=text, metadata={"filename": file_name})]
-
+            text = content.decode("utf-8", errors="ignore")
+            docs = [Document(text=text)]
         documents.extend(docs)
-
     return documents
-
-# Ollama model listing
-models = [model["name"] for model in ollama.list()["models"]]
-
-# FULL bulletproof cold start check
-if not models:
-    st.warning("🚩 No models installed yet. Please download a model first.")
-    st.stop()
-
-# Safe model selector
-if "llama3.1:8b" in models:
-    default_model = "llama3.1:8b"
-else:
-    default_model = models[0]
-
-st.session_state["model"] = st.selectbox("Choose LLM Model", models, index=models.index(default_model))
-
-Settings.llm = Ollama(model=st.session_state["model"], request_timeout=300.0)
 
 # Sidebar
 with st.sidebar:
-    st.title(":rocket: Jetson Copilot V3.1.1")
-    st.subheader('Fully autonomous local AI assistant', divider='rainbow')
+    st.title("Jetson Copilot V4")
+    st.subheader("SaaS Modern Build")
 
-    st.page_link("pages/download_model.py", label="Download Models", icon="➕")
+    default_model = "llama3:latest" if "llama3:latest" in models else models[0]
+    selected_model = st.selectbox("LLM Model", models, index=models.index(default_model))
+    st.session_state["model"] = selected_model
 
-    prev_use_index = st.session_state.use_index
-    st.session_state.use_index = st.toggle("Use RAG (document retrieval)", value=st.session_state.use_index)
+    # Initialize Ollama LLM + embedding
+    llm = Ollama(model=selected_model, request_timeout=300.0)
+    embed_model = OllamaEmbedding("mxbai-embed-large:latest")
 
-    new_prompt = st.text_area("System prompt", st.session_state.context_prompt, height=200)
-    if new_prompt != st.session_state.context_prompt:
-        st.session_state.context_prompt = new_prompt
-        st.success("System prompt updated!")
+    st.session_state.rag_mode = st.toggle("Use RAG indexing", value=st.session_state.rag_mode)
 
-    uploaded_files = st.file_uploader("Upload files to chat context", type=["pdf", "txt", "docx", "md"], accept_multiple_files=True)
-    if uploaded_files:
-        new_docs = process_uploaded_files(uploaded_files)
-        st.session_state.uploaded_docs.extend(new_docs)
-        st.success("Files successfully uploaded!")
+    updated_prompt = st.text_area("System Prompt:", value=st.session_state.context_prompt, height=200)
+    if updated_prompt != st.session_state.context_prompt:
+        st.session_state.context_prompt = updated_prompt
+        st.success("Updated system prompt.")
 
-    if st.session_state.use_index:
-        saved_index_list = find_saved_indexes()
-        index_name = st.selectbox("Index", saved_index_list)
+    uploaded = st.file_uploader("Upload documents", type=["pdf", "docx", "md", "txt"], accept_multiple_files=True)
+    if uploaded:
+        docs = process_uploaded_files(uploaded)
+        st.session_state.uploaded_docs.extend(docs)
+        st.success("Documents loaded.")
 
-        if index_name:
-            with st.spinner('Loading index...'):
-                st.session_state.index = load_index(index_name)
+# Build RAG index
+def build_rag_index():
+    if not st.session_state.uploaded_docs:
+        return None
+    parser = SentenceSplitter(chunk_size=512, chunk_overlap=50)
+    index = VectorStoreIndex.from_documents(st.session_state.uploaded_docs, transformations=[parser])
+    return index
 
-            st.page_link("pages/build_index.py", label="Build Index", icon="🛠️")
+# Display chat history
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"], avatar=msg["avatar"]):
+        st.markdown(msg["content"])
 
-    model_catalog_utils.sync_catalog()
-
-    if st.button("🔁 Reset Chat"):
-        st.session_state.messages = [
-            {"role": "assistant", "content": "Ask me anything!", "avatar": AVATAR_AI}
-        ]
-        st.session_state.memory = ChatMemoryBuffer.from_defaults(token_limit=4096)
-        st.session_state.uploaded_docs = []
-        st.success("Chat reset.")
-
-# Chat history display
-for message in st.session_state.messages:
-    with st.chat_message(message["role"], avatar=message["avatar"]):
-        st.markdown(message["content"])
-
-# Main chat loop
-if prompt := st.chat_input("Enter prompt here..."):
+# Chat handling
+if prompt := st.chat_input("Enter your question..."):
     st.session_state.messages.append({"role": "user", "content": prompt, "avatar": AVATAR_USER})
-
     with st.chat_message("user", avatar=AVATAR_USER):
         st.markdown(prompt)
 
     with st.chat_message("assistant", avatar=AVATAR_AI):
-        with st.spinner("Thinking..."):
-            time.sleep(0.5)
+        with st.spinner("Generating response..."):
+            response = ""
+            buffer = ""
+            flush_every = 20  # characters to buffer before updating UI
+            placeholder = st.empty()
 
-            message = ""
-
-            if st.session_state.use_index:
-                permanent_docs = st.session_state.index.storage_context.docstore.docs.values()
-                all_docs = list(permanent_docs) + st.session_state.uploaded_docs
-                combined_index = VectorStoreIndex.from_documents(all_docs)
-
-                chat_engine = combined_index.as_chat_engine(
+            if st.session_state.rag_mode and st.session_state.uploaded_docs:
+                rag_index = build_rag_index()
+                chat_engine = rag_index.as_chat_engine(
                     chat_mode="context",
-                    streaming=True,
                     memory=st.session_state.memory,
-                    llm=Settings.llm,
-                    context_prompt=st.session_state.context_prompt,
-                    verbose=True
+                    system_prompt=st.session_state.context_prompt,
+                    llm=llm,
+                    streaming=True
                 )
-
-                placeholder = st.empty()
-                for chunk in chat_engine.stream_chat(prompt).response_gen:
-                    message += chunk
-                    placeholder.markdown(message)
+                stream = chat_engine.stream_chat(prompt)
+                for chunk in stream.response_gen:
+                    buffer += chunk
+                    if len(buffer) >= flush_every:
+                        response += buffer
+                        placeholder.markdown(response)
+                        buffer = ""
+                if buffer:
+                    response += buffer
+                    placeholder.markdown(response)
             else:
                 system_prompt = st.session_state.context_prompt
-                messages_only = [{"role": "system", "content": system_prompt}] + [
+                messages_input = [{"role": "system", "content": system_prompt}] + [
                     {"role": m["role"], "content": m["content"]} for m in st.session_state.messages
                 ]
-
-                stream = ollama.chat(model=st.session_state["model"], messages=messages_only, stream=True)
-                placeholder = st.empty()
+                stream = ollama.chat(model=selected_model, messages=messages_input, stream=True)
                 for chunk in stream:
-                    message += chunk["message"]["content"]
-                    placeholder.markdown(message)
+                    piece = chunk["message"]["content"]
+                    buffer += piece
+                    if len(buffer) >= flush_every:
+                        response += buffer
+                        placeholder.markdown(response)
+                        buffer = ""
+                if buffer:
+                    response += buffer
+                    placeholder.markdown(response)
 
-            st.session_state.messages.append({"role": "assistant", "content": message, "avatar": AVATAR_AI})
+            st.session_state.messages.append({"role": "assistant", "content": response, "avatar": AVATAR_AI})
+
+# Sidebar tool: Reset chat
+with st.sidebar:
+    if st.button("🔄 Reset Chat"):
+        st.session_state.messages = [{"role": "assistant", "content": "Hello! Upload documents or start chatting.", "avatar": AVATAR_AI}]
+        st.session_state.memory = ChatMemoryBuffer.from_defaults(token_limit=4096)
+        st.session_state.uploaded_docs = []
+        st.success("Chat reset.")

@@ -1,10 +1,9 @@
 #!/bin/bash
 
-echo "Launching Jetson Copilot V3.1.3 Docker container..."
-
-docker run --rm --runtime=nvidia --network=host -p 8501:8501 jetson-copilot:clean-v3.1.3 &
+echo "Launching Jetson Copilot V3.2 Docker container..."
+docker run --rm --runtime=nvidia --network=host -p 8501:8501 -v $(pwd)/models:/models jetson-copilot:clean-v3.2 &
 # For DGX change --runtime=nvidia to --gpus all
-
+# remove --rm if you need feedback on startup
 # Wait a second to allow container to spin up
 sleep 2
 

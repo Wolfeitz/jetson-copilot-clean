@@ -4,6 +4,12 @@ A fully self-hosted, GPU-accelerated, hybrid-RAG AI assistant for NVIDIA Jetson 
 
 ---
 
+## Jetson Copilot V3.2 🚀
+
+An advanced, containerized local AI assistant designed for Jetson Orin AGX (and portable to DGX / SaaS stacks).  
+This version introduces modernized builds, faster dependency resolution, fully isolated environments, and simplified maintenance for stable operation.
+
+
 ## 🔥 What's new in V3.1.3
 
 - 🏋️ Fully minimized Docker image (sub-1GB builds)
@@ -12,6 +18,18 @@ A fully self-hosted, GPU-accelerated, hybrid-RAG AI assistant for NVIDIA Jetson 
 - 🧠 SaaS-aligned architecture for future scale out
 - 📄 Full support for PDF, Word, Markdown, TXT ingestion (OCR intentionally excluded)
 - 📊 Tools for full Docker lifecycle management included
+
+---
+
+## Features
+
+- ✅ Runs local Ollama models
+- ✅ Document ingestion (PDF, DOCX, TXT, Web)
+- ✅ Isolated per-container vector store
+- ✅ Full GPU acceleration on Jetson Orin AGX
+- ✅ Fully modernized package resolver (pip-tools based)
+- ✅ 100% reproducible builds with pinned dependencies
+- ✅ Fast rebuilds with optimized Docker layering
 
 ---
 
@@ -77,6 +95,35 @@ jetson-copilot-clean/
     ├── docker_nuke.sh
     └── README.md (tools documentation)
 ```
+
+## Dockerfile Build Process
+- Uses Ubuntu 22.04 ARM64v8
+- Python 3.10 environment
+- Modern pip-tools build system to solve dependency conflicts
+- Models are stored on host machine and mounted via Ollama
+
+---
+
+## Requirements File Management
+- Edit requirements.in to add/remove packages
+- Run pip-compile requirements.in (either on host or during Docker build)
+- Do NOT hand-edit requirements.txt
+
+---
+
+## ⚠ Known Current Limitations
+- Current build requires stable internet during pip install
+- LlamaIndex core package dependency versions can still occasionally drift.
+- OCR-based ingestion still disabled by default (pending Jetson optimization)
+
+---
+
+## Next Steps
+- ✅ v3.2 build stabilization ✅
+- ⏩ Future: SaaS-ready scalable multi-tenant architecture
+- ⏩ Optional: Jetson vs DGX optimized runtime flags
+
+---
 
 ## 🛠 Docker Utility Tools (Inside /tools)
 - Script	Purpose
