@@ -1,7 +1,7 @@
-Indexes/
+# Indexes/
 .ollama/
-models/
-models/*
+# models/
+# models/*
 
 .*
 *.log
