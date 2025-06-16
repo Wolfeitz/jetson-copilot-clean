@@ -1,9 +1,7 @@
 streamlit
 ollama==0.5.1
-
 llama-index==0.12.42
-llama-index-readers-file==0.4.9
 llama-index-readers-web==0.4.2
-
+llama-index-readers-file==0.4.9
 pydantic==2.11.7
 requests

@@ -1,5 +1,7 @@
+# Base image (ARM64 Jetson-compatible Ubuntu)
 FROM arm64v8/ubuntu:22.04
 
+# Avoid interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install system packages
@@ -21,18 +23,15 @@ COPY requirements.in .
 RUN pip-compile requirements.in
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Clone llama_index repo
-RUN git clone https://github.com/jerryjliu/llama_index.git /llama_index
-WORKDIR /llama_index
+# Install modular llama-index packages for Ollama integration
+RUN pip install llama-index-llms-ollama==0.6.2 llama-index-embeddings-ollama==0.6.0
 
-RUN pip install ./llama_index/llms/ollama
-RUN pip install ./llama_index/embeddings/ollama
-
-
-# Copy application code
+# Copy app code into container
 WORKDIR /app
 COPY streamlit_app/ /app
 
+# Expose Streamlit port
 EXPOSE 8501
 
+# Startup Streamlit server
 ENTRYPOINT ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]

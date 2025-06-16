@@ -13,14 +13,15 @@ from llama_index.core.memory import ChatMemoryBuffer
 from llama_index.llms.ollama import Ollama
 from llama_index.embeddings.ollama import OllamaEmbedding
 from llama_index.readers.file import PDFReader, DocxReader, MarkdownReader
-from llama_index.core.schema import Document
+from llama_index.readers.web import SimpleWebPageReader  # <- this is the missing import
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
-st.set_page_config(page_title="Jetson Copilot V4.2.1 SaaS", page_icon="🤖")
+st.set_page_config(page_title="Jetson Copilot V4.4.4 SaaS", page_icon="🤖")
 
 AVATAR_AI = Image.open('./images/jetson-soc.png')
 AVATAR_USER = Image.open('./images/user-purple.png')
+
 DEFAULT_PROMPT = """You are a highly capable AI assistant. Use any document context provided to inform your answers.
 
 Document Context:
@@ -31,15 +32,12 @@ Use both the chat history and document context to assist the user."""
 
 INDEX_DIR = "Indexes"
 
-# Load models
+# Model Loader
 def load_models():
     try:
         response = ollama.list()
-        models_raw = list(response)
-        models = []
-        for model_entry in models_raw:
-            if isinstance(model_entry, dict) and "name" in model_entry:
-                models.append(model_entry["name"])
+        models_raw = response.get("models", [])
+        models = [model_entry["name"] for model_entry in models_raw if "name" in model_entry]
     except Exception as e:
         st.error(f"Failed to query Ollama models: {e}")
         models = []
@@ -61,7 +59,7 @@ if "models" not in st.session_state:
 
 models = st.session_state.models
 
-# State initialization
+# Session State Init
 if "memory" not in st.session_state:
     st.session_state.memory = ChatMemoryBuffer.from_defaults(token_limit=4096)
 if "messages" not in st.session_state:
@@ -73,7 +71,7 @@ if "rag_mode" not in st.session_state:
 if "active_index" not in st.session_state:
     st.session_state.active_index = None
 
-# File processor
+# File Processor (used by BuildIndex only now)
 def process_uploaded_files(files):
     documents = []
     for file in files:
@@ -96,16 +94,10 @@ def process_uploaded_files(files):
         documents.extend(docs)
     return documents
 
-# Persistent index mgmt
+# Persistent Index Mgmt
 def list_indexes():
     os.makedirs(INDEX_DIR, exist_ok=True)
     return [d for d in os.listdir(INDEX_DIR) if os.path.isdir(os.path.join(INDEX_DIR, d))]
-
-def create_new_index(index_name, docs):
-    os.makedirs(os.path.join(INDEX_DIR, index_name), exist_ok=True)
-    parser = SentenceSplitter(chunk_size=512, chunk_overlap=50)
-    index = VectorStoreIndex.from_documents(docs, transformations=[parser])
-    index.storage_context.persist(persist_dir=os.path.join(INDEX_DIR, index_name))
 
 def load_existing_index(index_name):
     storage_context = StorageContext.from_defaults(persist_dir=os.path.join(INDEX_DIR, index_name))
@@ -113,38 +105,35 @@ def load_existing_index(index_name):
 
 # Sidebar UI
 with st.sidebar:
-    st.title("Jetson Copilot V4.2.1 SaaS-Grade")
+    st.title("Jetson Copilot V4.4.4 SaaS")
     default_model = "llama3:latest" if "llama3:latest" in models else models[0]
     selected_model = st.selectbox("LLM Model", models, index=models.index(default_model))
     st.session_state["model"] = selected_model
+    st.page_link("pages/download_model.py", label=" Download a new LLM", icon="➕")
 
     llm = Ollama(model=selected_model, request_timeout=300.0)
     embed_model = OllamaEmbedding("mxbai-embed-large:latest")
     Settings.llm = llm
     Settings.embed_model = embed_model
 
-    st.session_state.rag_mode = st.toggle("Enable RAG", value=st.session_state.rag_mode)
+    st.toggle("Enable RAG", value=st.session_state.rag_mode, key="rag_mode", on_change=lambda: None)
+
     updated_prompt = st.text_area("System Prompt:", value=st.session_state.context_prompt, height=200)
     if updated_prompt != st.session_state.context_prompt:
         st.session_state.context_prompt = updated_prompt
         st.success("Prompt updated.")
 
-    st.subheader("RAG Index Management:")
-    indexes = list_indexes()
-    if indexes:
-        selected_index = st.selectbox("Select RAG Index:", indexes, index=0)
-        st.session_state.active_index = selected_index
-    else:
-        st.info("No indexes found.")
-        st.session_state.active_index = None
+    if st.session_state.rag_mode:
+        st.subheader("RAG Index Management:")
+        indexes = list_indexes()
+        if indexes:
+            selected_index = st.selectbox("Select RAG Index:", indexes, index=0)
+            st.session_state.active_index = selected_index
+        else:
+            st.info("No indexes found.")
+            st.session_state.active_index = None
 
-    uploaded = st.file_uploader("Upload files to create index", type=["pdf", "docx", "md", "txt"], accept_multiple_files=True)
-    index_name = st.text_input("New Index Name:")
-    if uploaded and index_name and st.button("Create New Index"):
-        docs = process_uploaded_files(uploaded)
-        create_new_index(index_name, docs)
-        st.success(f"Created index: {index_name}")
-        st.rerun()
+        st.page_link("pages/build_index.py", label="🛠️ Build New Index")
 
 # Chat flow
 for msg in st.session_state.messages:
