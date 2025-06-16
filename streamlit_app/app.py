@@ -6,14 +6,13 @@ import tempfile
 import logging
 import sys
 from PIL import Image
-from llama_index.core.settings import Settings
-from llama_index.core import VectorStoreIndex, StorageContext, load_index_from_storage
-from llama_index.core.node_parser import SentenceSplitter
-from llama_index.core.memory import ChatMemoryBuffer
+from llama_index.core import VectorStoreIndex, Settings, Document
+from llama_index.core.storage import StorageContext
 from llama_index.llms.ollama import Ollama
 from llama_index.embeddings.ollama import OllamaEmbedding
-from llama_index.readers.file import PDFReader, DocxReader, MarkdownReader
-from llama_index.readers.web import SimpleWebPageReader  # <- this is the missing import
+from llama_index.core import SimpleDirectoryReader
+from llama_index.readers.web import SimpleWebPageReader
+from llama_index.core.memory import ChatMemoryBuffer
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
@@ -71,29 +70,6 @@ if "rag_mode" not in st.session_state:
 if "active_index" not in st.session_state:
     st.session_state.active_index = None
 
-# File Processor (used by BuildIndex only now)
-def process_uploaded_files(files):
-    documents = []
-    for file in files:
-        content = file.read()
-        name = file.name.lower()
-        if name.endswith(".pdf"):
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-                tmp.write(content)
-                reader = PDFReader()
-                docs = reader.load_data(tmp.name)
-        elif name.endswith(".docx"):
-            reader = DocxReader()
-            docs = reader.load_data(io.BytesIO(content))
-        elif name.endswith(".md"):
-            reader = MarkdownReader()
-            docs = reader.load_data(io.BytesIO(content))
-        else:
-            text = content.decode("utf-8", errors="ignore")
-            docs = [Document(text=text)]
-        documents.extend(docs)
-    return documents
-
 # Persistent Index Mgmt
 def list_indexes():
     os.makedirs(INDEX_DIR, exist_ok=True)
@@ -101,7 +77,7 @@ def list_indexes():
 
 def load_existing_index(index_name):
     storage_context = StorageContext.from_defaults(persist_dir=os.path.join(INDEX_DIR, index_name))
-    return load_index_from_storage(storage_context)
+    return VectorStoreIndex.load_from_storage(storage_context)
 
 # Sidebar UI
 with st.sidebar:
