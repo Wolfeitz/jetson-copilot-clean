@@ -6,7 +6,8 @@ import tempfile
 import logging
 import sys
 from PIL import Image
-from llama_index.core import VectorStoreIndex, Settings, Document
+from llama_index.core import Settings, Document
+from llama_index import load_index_from_storage
 from llama_index.core.storage import StorageContext
 from llama_index.llms.ollama import Ollama
 from llama_index.embeddings.ollama import OllamaEmbedding
@@ -77,7 +78,7 @@ def list_indexes():
 
 def load_existing_index(index_name):
     storage_context = StorageContext.from_defaults(persist_dir=os.path.join(INDEX_DIR, index_name))
-    return VectorStoreIndex.load_from_storage(storage_context)
+    return load_index_from_storage(storage_context)
 
 # Sidebar UI
 with st.sidebar:

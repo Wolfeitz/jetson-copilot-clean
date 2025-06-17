@@ -6,18 +6,27 @@ import pandas as pd
 import logging
 import ollama
 
-from llama_index.core import VectorStoreIndex, Settings, StorageContext, Document
+from llama_index.core import (
+    VectorStoreIndex,
+    StorageContext,
+    SimpleDirectoryReader,
+    Document,
+    load_index_from_storage
+)
+from llama_index.core.settings import Settings
 from llama_index.llms.ollama import Ollama
 from llama_index.embeddings.ollama import OllamaEmbedding
-from llama_index.core import SimpleDirectoryReader
 from llama_index.readers.web import SimpleWebPageReader
+
+
+
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
 # App title
 st.set_page_config(page_title="Jetson Copilot - Build Index", page_icon="🛠️")
 
-INDEX_DIR = "Indexes" #stuff
+INDEX_DIR = "Indexes"
 DOC_ROOT = "Documents"
 
 os.makedirs(INDEX_DIR, exist_ok=True)
@@ -69,14 +78,36 @@ if st.button("🚀 Build Index", disabled=not index_name or (not uploaded_files 
 
     if uploaded_docs:
         reader = SimpleDirectoryReader(input_dir=DOC_ROOT, recursive=False)
-        docs = reader.load_data()
-        documents.extend(docs)
-        st.write(f"Loaded {len(docs)} local documents.")
+        all_docs = reader.load_data()
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+
+        for i, doc in enumerate(all_docs):
+            status_text.text(f"Processing document {i+1} of {len(all_docs)}: {doc.metadata.get('file_name', 'Unnamed')}")
+            documents.append(doc)
+            progress_bar.progress((i + 1) / len(all_docs))
+
+        status_text.text("✅ All local documents processed.")
+
 
     if urls:
-        web_docs = SimpleWebPageReader(html_to_text=True).load_data(urls)
+        st.write("🔍 Fetching web documents...")
+        web_docs = []
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+
+        for i, url in enumerate(urls):
+            status_text.text(f"Scraping ({i+1}/{len(urls)}): {url}")
+            try:
+                doc = SimpleWebPageReader(html_to_text=True).load_data([url])
+                web_docs.extend(doc)
+            except Exception as e:
+                st.warning(f"Failed to load {url}: {e}")
+            progress_bar.progress((i + 1) / len(urls))
+
         documents.extend(web_docs)
-        st.write(f"Loaded {len(web_docs)} web documents.")
+        status_text.text("✅ All web documents processed.")
+
 
     index = VectorStoreIndex.from_documents(documents)
     index.storage_context.persist(persist_dir=index_path)
