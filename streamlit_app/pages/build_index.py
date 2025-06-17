@@ -6,12 +6,11 @@ import pandas as pd
 import logging
 import ollama
 
-from llama_index.core import VectorStoreIndex, Settings, Document
-from llama_index.core import StorageContext
+from llama_index.core import VectorStoreIndex, Settings, StorageContext, Document
 from llama_index.llms.ollama import Ollama
 from llama_index.embeddings.ollama import OllamaEmbedding
-from llama_index.core.readers import SimpleDirectoryReader
-from llama_index.core.readers import SimpleWebPageReader
+from llama_index.core import SimpleDirectoryReader
+from llama_index.readers.web import SimpleWebPageReader
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
@@ -21,32 +20,28 @@ st.set_page_config(page_title="Jetson Copilot - Build Index", page_icon="🛠️
 INDEX_DIR = "Indexes"
 DOC_ROOT = "Documents"
 
-# Ensure base directories exist
 os.makedirs(INDEX_DIR, exist_ok=True)
 os.makedirs(DOC_ROOT, exist_ok=True)
 
-# Model loader (ensure embedding model is pulled)
-models = [model["name"] for model in ollama.list()["models"]]
+# Ensure embedding model is pulled
+models = [model["model"] for model in ollama.list()["models"]]
 if 'mxbai-embed-large:latest' not in models:
     with st.spinner("Downloading embedding model..."):
         ollama.pull("mxbai-embed-large")
 
-# Embedding model is fixed for now to OllamaEmbedding
+# Set embedding model
 Settings.embed_model = OllamaEmbedding(model_name="mxbai-embed-large:latest")
 
-# Sidebar: index name
+# Sidebar
 with st.sidebar:
     st.header("📦 New Index Setup")
-
     index_name = st.text_input("Index Name:")
     index_path = os.path.join(INDEX_DIR, index_name) if index_name else None
-
     if index_name and os.path.exists(index_path):
         st.warning("Index name already exists!")
 
-# Step 1: Upload documents
+# Upload documents
 st.subheader("📄 Upload Files")
-
 uploaded_files = st.file_uploader(
     "Upload files for indexing:",
     type=["pdf", "docx", "md", "txt"],
@@ -60,19 +55,16 @@ if uploaded_files:
         with open(file_path, "wb") as f:
             f.write(file.read())
         uploaded_docs.append(file_path)
-
-if uploaded_docs:
     st.success(f"Uploaded {len(uploaded_docs)} files.")
 
-# Step 2: Optional URLs
+# Optional URLs
 st.subheader("🌐 Optional URLs (web scraping)")
 urls_text = st.text_area("Enter one URL per line to pull web pages:")
 urls = [u.strip() for u in urls_text.splitlines() if u.strip()]
 
-# Step 3: Build index button
+# Build index
 if st.button("🚀 Build Index", disabled=not index_name or (not uploaded_files and not urls)):
     start_time = time.time()
-
     documents = []
 
     if uploaded_docs:
@@ -88,9 +80,8 @@ if st.button("🚀 Build Index", disabled=not index_name or (not uploaded_files 
 
     index = VectorStoreIndex.from_documents(documents)
     index.storage_context.persist(persist_dir=index_path)
-
     elapsed = time.time() - start_time
     st.success(f"Index '{index_name}' created successfully in {elapsed:.1f} seconds.")
 
-# Link back to main chat page
+# Back link
 st.page_link("app.py", label="⬅️ Back to Chat")
