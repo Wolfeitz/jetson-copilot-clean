@@ -17,7 +17,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 # App title
 st.set_page_config(page_title="Jetson Copilot - Build Index", page_icon="🛠️")
 
-INDEX_DIR = "Indexes"
+INDEX_DIR = "Indexes" #stuff
 DOC_ROOT = "Documents"
 
 os.makedirs(INDEX_DIR, exist_ok=True)
