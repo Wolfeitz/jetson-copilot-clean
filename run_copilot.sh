@@ -2,7 +2,11 @@
 
 echo "🚀 Running Jetson Copilot V4.3 SaaS Container..."
 
-docker run --rm --runtime=nvidia --network=host -p 8501:8501 jetson-copilot:v4.3 &
+docker run --rm --runtime=nvidia --network=host \
+  -e OLLAMA_BASE_URL=http://localhost:11434 \
+  -e OLLAMA_HOST=http://localhost:11434 \
+  -p 8501:8501 jetson-copilot:v4.3 &
+
 # For DGX change --runtime=nvidia to --gpus all
 # remove --rm if you need feedback on startup
 # Wait a second to allow container to spin up

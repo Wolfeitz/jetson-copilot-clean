@@ -6,15 +6,20 @@ import tempfile
 import logging
 import sys
 from PIL import Image
-from llama_index.core import Settings, Document
-from llama_index import load_index_from_storage
+from llama_index.core import (
+    Settings, 
+    Document,
+    load_index_from_storage,
+    SimpleDirectoryReader
+)
 from llama_index.core.storage import StorageContext
 from llama_index.llms.ollama import Ollama
 from llama_index.embeddings.ollama import OllamaEmbedding
-from llama_index.core import SimpleDirectoryReader
 from llama_index.readers.web import SimpleWebPageReader
 from llama_index.core.memory import ChatMemoryBuffer
 
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+os.environ["OLLAMA_HOST"] = OLLAMA_BASE_URL
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
 st.set_page_config(page_title="Jetson Copilot V4.4.4 SaaS", page_icon="🤖")
@@ -88,8 +93,8 @@ with st.sidebar:
     st.session_state["model"] = selected_model
     st.page_link("pages/download_model.py", label=" Download a new LLM", icon="➕")
 
-    llm = Ollama(model=selected_model, request_timeout=300.0)
-    embed_model = OllamaEmbedding("mxbai-embed-large:latest")
+    llm = Ollama(model=selected_model, request_timeout=300.0, base_url=OLLAMA_BASE_URL)
+    embed_model = OllamaEmbedding("mxbai-embed-large:latest", base_url=OLLAMA_BASE_URL)
     Settings.llm = llm
     Settings.embed_model = embed_model
 
@@ -112,6 +117,19 @@ with st.sidebar:
 
         st.page_link("pages/build_index.py", label="🛠️ Build New Index")
 
+        with st.sidebar:
+            if st.button("Show indexed docs"):
+                if st.session_state.rag_mode and st.session_state.active_index:
+                    reader = SimpleDirectoryReader(input_dir=DOC_ROOT, recursive=False)
+                    all_docs = reader.load_data()
+                    unique_files = set()
+                    for doc in all_docs:
+                        fname = doc.metadata.get("file_name") or doc.metadata.get("file_path")
+                        unique_files.add(fname)
+                    st.write(f"ALL indexed files ({len(unique_files)}):")
+                    for file in unique_files:
+                        st.write(file)
+
 # Chat flow
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"], avatar=msg["avatar"]):
@@ -133,7 +151,8 @@ if prompt := st.chat_input("Enter your question..."):
                     chat_mode="context",
                     memory=st.session_state.memory,
                     system_prompt=st.session_state.context_prompt,
-                    streaming=True
+                    streaming=True,
+                    similarity_top_k=12  # or higher, matching your needs
                 )
                 stream = chat_engine.stream_chat(prompt)
                 for chunk in stream.response_gen:
@@ -163,6 +182,7 @@ if prompt := st.chat_input("Enter your question..."):
                     placeholder.markdown(response)
 
             st.session_state.messages.append({"role": "assistant", "content": response, "avatar": AVATAR_AI})
+
 
 # Chat reset
 with st.sidebar:
