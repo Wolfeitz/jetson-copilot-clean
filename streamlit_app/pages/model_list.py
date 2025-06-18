@@ -4,7 +4,11 @@ import pandas as pd
 import json
 import os
 
-st.set_page_config(page_title="Jetson Copilot - Model Catalog", page_icon="🧠")
+st.set_page_config(
+    page_title="Jetson Copilot - Model Catalog", 
+    page_icon="🧠",
+    layout="wide"
+)
 
 st.title("Available Models on Host")
 
