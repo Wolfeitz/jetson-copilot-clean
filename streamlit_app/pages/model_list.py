@@ -8,10 +8,9 @@ st.set_page_config(page_title="Jetson Copilot - Model Catalog", page_icon="🧠"
 
 st.title("Available Models on Host")
 
-# Path to the model catalog
+# Path to the model catalog (mount as /app/model_catalog.json)
 CATALOG_PATH = os.getenv("MODEL_CATALOG_PATH", "/app/model_catalog.json")
 
-# Load model catalog
 def load_model_catalog():
     if os.path.exists(CATALOG_PATH):
         with open(CATALOG_PATH, "r") as f:
@@ -30,34 +29,59 @@ except Exception as e:
     st.error(f"Failed to query Ollama on host: {e}")
     models_list = []
 
-table = []
+# --- Separate LLMs and Embedding Models ---
+llm_rows = []
+embed_rows = []
+
+def is_embedding_model(model_name):
+    """Refine this function as needed for your naming patterns."""
+    return (
+        "embed" in model_name.lower()
+        or "embedding" in model_name.lower()
+        or "mxbai" in model_name.lower()
+        or "bge" in model_name.lower()
+    )
+
 for model_entry in models_list:
-    # Handle both 'name' and 'model' keys (Ollama API variants)
     model_name = model_entry.get("name") or model_entry.get("model")
     cat_info = catalog.get(model_name, {})
 
-    size_mb = model_entry.get('size', 0) / (1024*1024)
+    size_mb = model_entry.get('size', 0) / (1024 * 1024)
     ram = cat_info.get("RAM", "N/A")
-    reasoning = cat_info.get("Reasoning", "N/A")
     jetson_safe = cat_info.get("JetsonSafe", "N/A")
     why = cat_info.get("Why", "")
+    reasoning = cat_info.get("Reasoning", "N/A")
 
-    table.append({
+    row = {
         "Model": model_name,
-        "Size (MiB)": f"{size_mb:.1f}",
+        "Size (MiB)": f"{size_mb:.1f}" if size_mb else "N/A",
         "RAM": ram,
-        "Reasoning": reasoning,
         "Jetson Safe": jetson_safe,
         "Why Choose": why,
-    })
+    }
 
-if table:
-    df = pd.DataFrame(table)
-    st.dataframe(df, use_container_width=True)
-else:
+    if is_embedding_model(model_name):
+        embed_rows.append(row)
+    else:
+        row["Reasoning"] = reasoning
+        llm_rows.append(row)
+
+# --- Show Language Models ---
+if llm_rows:
+    st.subheader("Language Models")
+    df_llm = pd.DataFrame(llm_rows)
+    st.dataframe(df_llm, use_container_width=True)
+
+# --- Show Embedding Models ---
+if embed_rows:
+    st.subheader("Embedding Models")
+    df_embed = pd.DataFrame(embed_rows)
+    st.dataframe(df_embed, use_container_width=True)
+
+if not llm_rows and not embed_rows:
     st.info("No models found on Ollama host.")
 
-# Usage instructions
+# --- Usage instructions ---
 st.markdown("---")
 st.markdown("""
 ### ℹ️ How to Add New Models
