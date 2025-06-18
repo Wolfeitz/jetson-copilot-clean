@@ -1,11 +1,30 @@
 #!/bin/bash
 
-echo "🚀 Running Jetson Copilot V4.3 SaaS Container..."
+echo "🚀 Running Jetson Copilot SaaS Container..."
 
-docker run --rm --runtime=nvidia --network=host -p 8501:8501 jetson-copilot:v4.3 &
-# For DGX change --runtime=nvidia to --gpus all
-# remove --rm if you need feedback on startup
-# Wait a second to allow container to spin up
+# ----- CONFIGURATION -----
+# Path to model catalog on the host (Ollama's system directory)
+MODEL_CATALOG_HOST="/usr/share/ollama/model_catalog.json"
+MODEL_CATALOG_CONTAINER="/app/model_catalog.json"
+CONTAINER_IMAGE="jetson-copilot:v4.3"
+
+# Set OLLAMA_BASE_URL for host Ollama server
+OLLAMA_BASE_URL="http://localhost:11434"
+
+# ----- DOCKER RUN COMMAND -----
+docker run --rm \
+  --runtime=nvidia \
+  --network=host \
+  -e OLLAMA_BASE_URL=$OLLAMA_BASE_URL \
+  -e OLLAMA_HOST=$OLLAMA_BASE_URL \
+  -v "$MODEL_CATALOG_HOST":"$MODEL_CATALOG_CONTAINER":ro \
+  -p 8501:8501 \
+  $CONTAINER_IMAGE &
+
+# For DGX: change --runtime=nvidia to --gpus all
+#          (or remove both for CPU-only debugging)
+# Remove --rm if you want the container to persist after exit
+
 sleep 2
 
 # Grab Jetson IP addresses for user convenience

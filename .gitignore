@@ -1,15 +1,43 @@
+# Ignore everything in Documents except README.md
 Documents/*
 !Documents/README.md
+
+# Ignore everything in Indexes except _L4T_README and README.md
 Indexes/*
-!Indexes/_L4T_README
-!Indexes/README.md
+!streamlit_app/Indexes/_L4T_README
+!streamlit_app/Indexes/README.md
+
+# Ignore everything in logs except README.md
 logs/*
 !logs/README.md
-ollama_models/*
-!ollama_models/README.md
 
-# Byte-compiled / optimized / DLL files
+# Ignore everything in ollama_models except README.md
+streamlit_app/ollama_models/*
+!streamlit_app/ollama_models/README.md
+
+# Python artifacts
 __pycache__/
 *.py[cod]
-*$py.classrequirements.txt
+*$py.class
+*.pyo
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+
+# Virtual environments
+venv/
+.env/
+
+# Docker and other system files
+.DS_Store
+*.bak
+*.tmp
+
+# Ignore requirements output unless you want to track it
 requirements.txt
+
+# Ollama/LLM data (models should NOT be committed)
+.ollama/
+models/

@@ -1,13 +1,33 @@
-# Indexes/
-.ollama/
-# models/
-# models/*
-
-.*
+# Ignore Docker and system files
+.*             # All dotfiles (except .dockerignore itself)
 *.log
 *.tmp
 *.bak
 *.swp
-venv/
+
+# Python artifacts
 __pycache__/
 *.pyc
+
+# IDE/editor files
+.vscode/
+.idea/
+
+# Virtual environments
+venv/
+.env/
+
+# Ignore Ollama host models if present in build context
+.ollama/
+models/
+models/*
+
+# Don't ignore Indexes or ollama_models: these should be included in the build context!
+# (The following lines ensure those folders ARE included:)
+!streamlit_app/Indexes/
+!streamlit_app/Indexes/_L4T_README/**
+!streamlit_app/Indexes/README.md
+!streamlit_app/ollama_models/
+!streamlit_app/ollama_models/README.md
+
+# Ignore any other unneeded data here

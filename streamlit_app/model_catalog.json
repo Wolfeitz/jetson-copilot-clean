@@ -1,38 +1,93 @@
 {
+  "llama3:latest": {
+    "RAM": "~8-10 GB",
+    "Reasoning": "🧠🧠🧠🧠🧠",
+    "JetsonSafe": "✅ Jetson 16GB+ recommended",
+    "Why": "Best default Llama3, fits AGX, great general assistant"
+  },
+  "llama3.1:latest": {
+    "RAM": "~10-12 GB",
+    "Reasoning": "🧠🧠🧠🧠🧠",
+    "JetsonSafe": "✅ Jetson 32GB+ recommended",
+    "Why": "Llama3.1, best performance per size, solid for chat/coding"
+  },
   "llama3.1:8b": {
     "RAM": "28-32 GB",
     "Reasoning": "🧠🧠🧠🧠🧠",
     "JetsonSafe": "❌ borderline unless you have full 64GB AGX",
-    "Why": "Full model, best if you have huge RAM"
+    "Why": "Full 8B model, max accuracy, big RAM only"
   },
-  "llama3.1:8b-q4_0": {
-    "RAM": "~10-12 GB",
+  "llama4:latest": {
+    "RAM": ">=32 GB",
     "Reasoning": "🧠🧠🧠🧠🧠",
-    "JetsonSafe": "✅ perfect for Jetson Orin 32GB",
-    "Why": "Best balance for Jetson AGX"
-  },
-  "llama3.1:8b-q4_K_M": {
-    "RAM": "~8-9 GB",
-    "Reasoning": "🧠🧠🧠🧠🧠",
-    "JetsonSafe": "✅ ideal if available",
-    "Why": "Ideal quantization for Jetson"
+    "JetsonSafe": "❌ Only for top-end DGX/desktop",
+    "Why": "Llama 4 (full), advanced reasoning, huge memory"
   },
   "llama4:maverick": {
     "RAM": "~4 GB",
     "Reasoning": "🧠🧠",
     "JetsonSafe": "✅ always safe",
-    "Why": "Ultra-light Llama 4 demo model"
+    "Why": "Ultra-light Llama 4 demo, runs anywhere"
+  },
+  "dolphin3:8b": {
+    "RAM": "~8-12 GB",
+    "Reasoning": "🧠🧠🧠🧠",
+    "JetsonSafe": "✅ AGX 32GB+",
+    "Why": "Open Hermes Dolphin, creative and chatty"
+  },
+  "gemma3:4b": {
+    "RAM": "~7-8 GB",
+    "Reasoning": "🧠🧠🧠",
+    "JetsonSafe": "✅ AGX 16GB+",
+    "Why": "Gemma 3B, solid factual accuracy, Google research"
+  },
+  "deepseek-r1:8b": {
+    "RAM": "~12 GB",
+    "Reasoning": "🧠🧠🧠🧠",
+    "JetsonSafe": "✅ AGX 32GB+",
+    "Why": "DeepSeek R1, excels at search and retrieval"
   },
   "mistral:7b": {
     "RAM": "~8-10 GB",
     "Reasoning": "🧠🧠🧠🧠",
     "JetsonSafe": "✅ safe",
-    "Why": "Excellent instruction following"
+    "Why": "Excellent instruction following, small but smart"
   },
-  "phi3:3.8b-q4_0": {
+  "codellama:7b-instruct": {
+    "RAM": "~8-10 GB",
+    "Reasoning": "🧠🧠🧠🧠",
+    "JetsonSafe": "✅ safe",
+    "Why": "Code-centric, ideal for software Q&A and snippets"
+  },
+  "phi3:3.8b": {
+    "RAM": "~5-6 GB",
+    "Reasoning": "🧠🧠🧠🧠",
+    "JetsonSafe": "✅ always safe",
+    "Why": "Insanely efficient for size, very fast"
+  },
+  "phi3:3.8": {
     "RAM": "~5-6 GB",
     "Reasoning": "🧠🧠🧠🧠",
     "JetsonSafe": "✅ always safe",
     "Why": "Insanely efficient for size"
+  },
+
+  "mxbai-embed-large:latest": {
+    "RAM": "~3 GB",
+    "Reasoning": "-",
+    "JetsonSafe": "✅ always safe",
+    "Why": "Default embedding model, accurate for RAG indexing"
+  },
+  "snowflake-arctic-embed2": {
+    "RAM": "~2.5 GB",
+    "Reasoning": "-",
+    "JetsonSafe": "✅ always safe",
+    "Why": "Arctic embedder, efficient for most Jetsons"
+  },
+  "nomic-embed-text": {
+    "RAM": "~3 GB",
+    "Reasoning": "-",
+    "JetsonSafe": "✅ always safe",
+    "Why": "Nomic text embedder, open-source, general RAG"
   }
 }

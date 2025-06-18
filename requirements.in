@@ -6,6 +6,9 @@ llama-index-readers-web==0.4.2
 llama-index-llms-ollama==0.6.2
 llama-index-embeddings-ollama==0.6.0
 ollama==0.5.1
+docx2txt
+pypdf
+python-docx
 
 pydantic==2.11.7
 requests
