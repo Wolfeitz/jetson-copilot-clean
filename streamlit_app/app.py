@@ -91,7 +91,7 @@ with st.sidebar:
     default_model = "llama3:latest" if "llama3:latest" in models else models[0]
     selected_model = st.selectbox("LLM Model", models, index=models.index(default_model))
     st.session_state["model"] = selected_model
-    st.page_link("pages/download_model.py", label=" Download a new LLM", icon="➕")
+    st.page_link("pages/model_list.py", label=" Available Models", icon="🧠")
 
     llm = Ollama(model=selected_model, request_timeout=300.0, base_url=OLLAMA_BASE_URL)
     embed_model = OllamaEmbedding("mxbai-embed-large:latest", base_url=OLLAMA_BASE_URL)
